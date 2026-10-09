@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="离线可用的三至五变量卡诺图练习：填图、环绕圈选、精确最简式检查。">
+<link rel="canonical" href="https://tijianweijin.github.io/karnaugh_game/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Karnaugh图小游戏">
+<meta property="og:description" content="三至五变量卡诺图练习：填图、合圈、精确检验最简式。">
+<meta property="og:url" content="https://tijianweijin.github.io/karnaugh_game/">
+<meta property="og:image" content="https://tijianweijin.github.io/karnaugh_game/share-cover.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<title>Karnaugh图小游戏</title>
+<style>/* MATH CSS */</style>
+<style>/* PAGE CSS */</style>
+</head>
+<body>
+<div class="shell">
+ <main class="main" id="main">
+ <header class="top"><h1>Karnaugh图小游戏</h1></header>
+ <section class="settings" aria-label="练习设置">
+ <label class="field">变量数<select id="varCount"><option value="3">三变量</option><option value="4" selected>四变量</option><option value="5">五变量</option></select></label>
+ <label class="field">训练类型<select id="mode"><option value="SOP">与或式 SOP · 圈 1</option><option value="POS">或与式 POS · 圈 0</option></select></label>
+ <label class="field">难度<select id="difficulty"><option value="easy">入门</option><option value="normal" selected>常规</option><option value="hard">进阶</option></select></label>
+ <label class="field">约束<select id="withX"><option value="yes" selected>包含无关项 X</option><option value="no">不含无关项</option></select></label>
+ <label class="field seed">题号（可复现）<input id="seed" aria-label="题号" placeholder="自动生成" maxlength="80"></label>
+ <div class="settings-actions"><button class="primary" id="newProblem">生成题目</button><button id="fixedProblem">例题 2.12(3)</button></div>
+ </section>
+ <nav class="steps" aria-label="练习阶段"><button id="stepFill" class="step active"><b>01</b>填写真值</button><button id="stepGroup" class="step" disabled><b>02</b>交互合圈</button><button id="stepResult" class="step" disabled><b>03</b>检验最简式</button></nav>
+ <div class="workspace"><div class="left">
+ <section class="problem card"><div class="problem-meta"><h2 id="problemTitle">本题函数</h2><span class="tag" id="problemTag"></span></div><div class="formula" id="source"></div><div class="constraint" id="constraint"></div></section>
+ <section class="map-card card"><div class="map-heading"><div><h2 id="stageTitle">01 · 填写卡诺图</h2><p class="stage-desc" id="stageDesc"></p></div><span class="tag" id="stageBadge">0 / 16</span></div>
+ <div class="toolbar hidden" id="answerView"><button class="paint active" id="viewMine" aria-pressed="true">我的答案</button><button class="paint" id="viewReference" aria-pressed="false">标准答案</button></div>
+ <div class="toolbar" id="paintTools"><span class="small">填格方式</span><button class="paint active" data-paint="cycle" aria-pressed="true">点击循环</button><button class="paint" data-paint="0" aria-pressed="false">填 0</button><button class="paint" data-paint="1" aria-pressed="false">填 1</button><button class="paint" data-paint="X" aria-pressed="false">填 X</button><button class="paint" data-paint="empty" aria-pressed="false">橡皮</button></div>
+ <div class="toolbar hidden" id="groupTools"><span class="small">点选每个格子，再添加一圈</span><button id="clearSelection" class="paint">清除选中</button><button id="undoGroup" class="paint">撤销上一圈</button><button id="clearGroups" class="paint danger">清空全部圈</button></div>
+ <div class="maps" id="maps"></div><p class="wrap-note" id="wrapNote"></p>
+ <div class="legend" id="legend"><span style="--color:#78baa5">已核对正确</span><span style="--color:#ce6979">填错 / 未填</span><span style="--color:#8990ea">当前选中</span></div>
+ <div class="actions" id="fillActions"><button class="primary" id="checkFill">提交并核对</button><button id="retryFill">清除错格</button><button id="fillHint">提示一格</button><button id="showFill">展示填图答案</button></div>
+ <div class="actions hidden" id="circleActions"><button class="primary" id="addGroup">添加这一圈</button><button id="checkCover">检验覆盖与最简</button><button id="groupHint">合圈提示</button><button id="showSolution">参考最简解</button></div>
+ <div class="feedback" id="feedback" role="status" aria-live="polite"></div><div class="result-panel hidden" id="result"></div>
+ </section>
+ </div><aside class="right"><section class="side-card card" id="groupCard"><div class="groups-title"><h3 id="groupsTitle">我的合圈</h3><span class="count" id="groupCount">0 圈</span></div><div class="group-list" id="groupList"></div><div class="small">当前表达式</div><div class="live-expression" id="liveExpression">等待合圈</div><div class="coverage" id="coverage">先完成填图，解锁合圈。</div><div class="meter"><span id="coverageBar" style="width:0%"></span></div><div class="stats" id="stats"></div></section>
+ </aside></div>
+
+ <footer class="footer"><span id="saveStatus">所有计算都在本机完成。</span><span><button id="sharePage" class="subtle">复制分享链接</button> · <button id="selfTest" class="subtle">运行内置自检</button> · Karnaugh v1.1</span></footer><div id="shareFallback" class="hidden"><input id="shareUrl" aria-label="分享链接" readonly style="width:100%;margin-top:12px"></div><div class="debug-test" id="testOutput" role="status"></div>
+ </main>
+</div><div id="toast" class="toast hidden" role="status"></div>
+<!-- KaTeX MIT license
+/* MATH LICENSE */
+-->
+<script>/* MATH JS */</script>
+<script>/* ENGINE */</script>
+<script>/* UI */</script>
+</body></html>

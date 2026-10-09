@@ -1,0 +1,16 @@
+{
+  "name": "karnaugh_game",
+  "version": "1.1.0",
+  "private": true,
+  "description": "中文三至五变量卡诺图练习小游戏",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node tests/engine.test.js"
+  },
+  "devDependencies": {
+    "katex": "0.19.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
