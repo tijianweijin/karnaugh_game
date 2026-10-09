@@ -6,6 +6,7 @@
 
 - LaTeX 数学斜体、上横线和最小项下标。
 - 低位行、高位列；五变量为 DE\ABC 的 8 列 × 4 行，支持折叠相邻合圈。
+- 跨边、跨角圈在对应边缘开口，五变量跨列折叠圈朝连接间隙开口。
 - 我的答案 / 标准答案切换，学生圈不会被覆盖。
 - 删除其他圈后颜色不变，本机自动保存进度。
 - 枚举所有合法蕴含项并精确求覆盖最优成本，接受不同的等成本最简式。
@@ -13,7 +14,7 @@
 
 ## 开发与验证
 
-需要 Node.js 18 或更新版本。运行 npm ci 安装构建依赖；npm test 执行算法测试；npm run build 生成 docs/index.html。
+需要 Node.js 18 或更新版本。运行 npm ci 安装构建依赖；npm test 执行算法及圈线边界测试；npm run build 生成 docs/index.html。
 
 src/ 保存可编辑源码，scripts/build.js 负责单文件打包，tests/ 保存独立覆盖对照与回归测试，docs/ 是 GitHub Pages 发布目录。
 

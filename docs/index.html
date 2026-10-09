@@ -149,7 +149,29 @@ function generate(n,mode,difficulty,withX,seed){
 }
 function layout(n){const gray=[0,1,3,2],gray3=[0,1,3,2,6,7,5,4],rows=n===3?[0,1]:gray,cols=n===5?gray3:gray,lowBits=n===3?1:2;return [{label:'',rowLabel:n===3?'C':n===4?'CD':'DE',colLabel:n===5?'ABC':'AB',rows:rows.map(x=>x.toString(2).padStart(lowBits,'0')),cols:cols.map(x=>x.toString(2).padStart(n===5?3:2,'0')),cells:rows.map(rv=>cols.map(cv=>(cv<<lowBits)|rv))}];}
 function groupGeometry(c,n){const map=layout(n)[0],rs=new Set(),cs=new Set();map.cells.forEach((row,r)=>row.forEach((i,col)=>{if(c.mask&bit(i)){rs.add(r);cs.add(col);}}));const consecutive=(set,total)=>set.size===total||[...set].some(start=>Array.from({length:set.size},(_,j)=>(start+j)%total).every(x=>set.has(x)));return {folded:!consecutive(rs,map.rows.length)||!consecutive(cs,map.cols.length)};}
-root.KMap={bit,bits,indices,pop,all,term,expression,masks,legal,solve,checkGroup,assess,evaluateGroups,fixed,generate,layout,groupGeometry,rng};
+// Border visibility belongs to each circle, so overlapping circles stay independent.
+function groupOutline(c,n){
+ const map=layout(n)[0],height=map.rows.length,width=map.cols.length,rs=new Set(),cs=new Set(),out=[];
+ const contains=(r,col)=>Boolean(c.mask&bit(map.cells[r][col]));
+ map.cells.forEach((row,r)=>row.forEach((i,col)=>{if(contains(r,col)){rs.add(r);cs.add(col);}}));
+ const folded=groupGeometry(c,n).folded;
+ // A full-height/width rectangle needs no wrap; only split edge pieces open outward.
+ const wrapRows=rs.size<height&&rs.has(0)&&rs.has(height-1);
+ const wrapCols=!folded&&cs.size<width&&cs.has(0)&&cs.has(width-1);
+ const foldJoin=(r,col,direction)=>map.cols.some((code,k)=>{
+  if((k-col)*direction<=0||!contains(r,k))return false;
+  const difference=parseInt(code,2)^parseInt(map.cols[col],2);
+  return difference>0&&(difference&(difference-1))===0;
+ });
+ map.cells.forEach((row,r)=>row.forEach((i,col)=>{if(!contains(r,col))return;
+  out[i]={top:!(r>0?contains(r-1,col):wrapRows&&contains(height-1,col)),
+   bottom:!(r<height-1?contains(r+1,col):wrapRows&&contains(0,col)),
+   left:!(folded?foldJoin(r,col,-1):col>0?contains(r,col-1):wrapCols&&contains(r,width-1)),
+   right:!(folded?foldJoin(r,col,1):col<width-1?contains(r,col+1):wrapCols&&contains(r,0))};
+ }));
+ return out;
+}
+root.KMap={bit,bits,indices,pop,all,term,expression,masks,legal,solve,checkGroup,assess,evaluateGroups,fixed,generate,layout,groupGeometry,groupOutline,rng};
 })(typeof module!=='undefined'?module.exports:globalThis);
 </script>
 <script>(() => {
@@ -188,15 +210,16 @@ function render(){const p=state.problem,n=p.n,total=p.table.length,fill=state.st
  renderMaps();renderGroups();
 }
 function renderMaps(){const p=state.problem,fill=state.stage==='fill',ref=showingReference();
+ const groupDrawings=displayedGroups().map((c,j)=>({c,j,outline:K.groupOutline(c,p.n)}));
  $('maps').innerHTML=K.layout(p.n).map(plane=>`<div class="map-block"><table class="kmap" aria-label="${p.n}变量卡诺图，${plane.rowLabel}行，${plane.colLabel}列"><thead><tr><th class="axis" scope="col">${plane.rowLabel}\\${plane.colLabel}</th>${plane.cols.map(s=>`<th scope="col">${s}</th>`).join('')}</tr></thead><tbody>${plane.cells.map((row,ri)=>`<tr><th scope="row">${plane.rows[ri]}</th>${row.map((i,ci)=>{
- const correct=state.answers[i]===p.table[i];const gs=displayedGroups().map((c,j)=>({c,j})).filter(({c})=>(c.mask&K.bit(i))!==0n);const val=fill?state.answers[i]:p.table[i];
+ const correct=state.answers[i]===p.table[i];const gs=groupDrawings.filter(({c})=>(c.mask&K.bit(i))!==0n);const val=fill?state.answers[i]:p.table[i];
  const cls=['cell',selected.has(i)?'selected':'',fill&&state.checked?(correct?'correct':'wrong'):'',missing.includes(i)?'uncovered':'',hintCell===i?'hint-cell':''].filter(Boolean).join(' ');
- const edges=!fill?gs.map(({c,j})=>{const width=plane.cols.length,contains=(r,col)=>(c.mask&K.bit(plane.cells[(r+plane.cells.length)%plane.cells.length][(col+width)%width]))!==0n;const styles=[`--g:${groupColor(c,j)}`,`--offset:${2+(colorSlot(c,j)%4)*3}px`];
- // Internal neighboring borders disappear; outer edges stay visible to show wrap segments.
- if(ri>0&&contains(ri-1,ci))styles.push('top:-4px','border-top-color:transparent','border-top-left-radius:0','border-top-right-radius:0');
- if(ri<plane.cells.length-1&&contains(ri+1,ci))styles.push('bottom:-4px','border-bottom-color:transparent','border-bottom-left-radius:0','border-bottom-right-radius:0');
- if(ci>0&&contains(ri,ci-1))styles.push('left:-4px','border-left-color:transparent','border-top-left-radius:0','border-bottom-left-radius:0');
- if(ci<plane.cols.length-1&&contains(ri,ci+1))styles.push('right:-4px','border-right-color:transparent','border-top-right-radius:0','border-bottom-right-radius:0');
+ const edges=!fill?gs.map(({c,j,outline})=>{const contains=(r,col)=>r>=0&&r<plane.cells.length&&col>=0&&col<plane.cols.length&&(c.mask&K.bit(plane.cells[r][col]))!==0n;const styles=[`--g:${groupColor(c,j)}`,`--offset:${2+(colorSlot(c,j)%4)*3}px`],edge=outline[i];
+ // Open wrapped edges at the map boundary, and folded edges toward their partner.
+ if(!edge.top)styles.push(`top:${contains(ri-1,ci)?-4:0}px`,'border-top-color:transparent','border-top-left-radius:0','border-top-right-radius:0');
+ if(!edge.bottom)styles.push(`bottom:${contains(ri+1,ci)?-4:0}px`,'border-bottom-color:transparent','border-bottom-left-radius:0','border-bottom-right-radius:0');
+ if(!edge.left)styles.push(`left:${contains(ri,ci-1)?-4:0}px`,'border-left-color:transparent','border-top-left-radius:0','border-bottom-left-radius:0');
+ if(!edge.right)styles.push(`right:${contains(ri,ci+1)?-4:0}px`,'border-right-color:transparent','border-top-right-radius:0','border-bottom-right-radius:0');
  return `<span class="circle-segment" style="${styles.join(';')}"></span>`;}).join(''):'';
  const labels=gs.map(({j})=>j+1).join('、');return `<td><button type="button" class="${cls}" data-cell="${i}" aria-label="${plane.label?plane.label+'，':''}m${i}，${p.n}位输入 ${K.bits(i,p.n).join('')}，${val===null?'未填':val}${fill&&state.checked?(correct?'，正确':'，错误'):''}${!fill&&labels?'，圈 '+labels:''}" ${ref?'disabled':!fill?`aria-pressed="${selected.has(i)}"`:''}>${edges}<span class="value">${val===null?'·':val}</span><span class="index">${minterm(i)}</span>${fill&&state.checked?`<span class="mark" aria-hidden="true">${correct?'✓':'×'}</span>`:''}${!fill&&gs.length?`<span class="group-badges" aria-hidden="true">${gs.map(({c,j})=>`<i style="--g:${groupColor(c,j)}">${j+1}</i>`).join('')}</span>`:''}</button></td>`;
  }).join('')}</tr>`).join('')}</tbody></table></div>`).join('');

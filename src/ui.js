@@ -34,15 +34,16 @@ function render(){const p=state.problem,n=p.n,total=p.table.length,fill=state.st
  renderMaps();renderGroups();
 }
 function renderMaps(){const p=state.problem,fill=state.stage==='fill',ref=showingReference();
+ const groupDrawings=displayedGroups().map((c,j)=>({c,j,outline:K.groupOutline(c,p.n)}));
  $('maps').innerHTML=K.layout(p.n).map(plane=>`<div class="map-block"><table class="kmap" aria-label="${p.n}变量卡诺图，${plane.rowLabel}行，${plane.colLabel}列"><thead><tr><th class="axis" scope="col">${plane.rowLabel}\\${plane.colLabel}</th>${plane.cols.map(s=>`<th scope="col">${s}</th>`).join('')}</tr></thead><tbody>${plane.cells.map((row,ri)=>`<tr><th scope="row">${plane.rows[ri]}</th>${row.map((i,ci)=>{
- const correct=state.answers[i]===p.table[i];const gs=displayedGroups().map((c,j)=>({c,j})).filter(({c})=>(c.mask&K.bit(i))!==0n);const val=fill?state.answers[i]:p.table[i];
+ const correct=state.answers[i]===p.table[i];const gs=groupDrawings.filter(({c})=>(c.mask&K.bit(i))!==0n);const val=fill?state.answers[i]:p.table[i];
  const cls=['cell',selected.has(i)?'selected':'',fill&&state.checked?(correct?'correct':'wrong'):'',missing.includes(i)?'uncovered':'',hintCell===i?'hint-cell':''].filter(Boolean).join(' ');
- const edges=!fill?gs.map(({c,j})=>{const width=plane.cols.length,contains=(r,col)=>(c.mask&K.bit(plane.cells[(r+plane.cells.length)%plane.cells.length][(col+width)%width]))!==0n;const styles=[`--g:${groupColor(c,j)}`,`--offset:${2+(colorSlot(c,j)%4)*3}px`];
- // Internal neighboring borders disappear; outer edges stay visible to show wrap segments.
- if(ri>0&&contains(ri-1,ci))styles.push('top:-4px','border-top-color:transparent','border-top-left-radius:0','border-top-right-radius:0');
- if(ri<plane.cells.length-1&&contains(ri+1,ci))styles.push('bottom:-4px','border-bottom-color:transparent','border-bottom-left-radius:0','border-bottom-right-radius:0');
- if(ci>0&&contains(ri,ci-1))styles.push('left:-4px','border-left-color:transparent','border-top-left-radius:0','border-bottom-left-radius:0');
- if(ci<plane.cols.length-1&&contains(ri,ci+1))styles.push('right:-4px','border-right-color:transparent','border-top-right-radius:0','border-bottom-right-radius:0');
+ const edges=!fill?gs.map(({c,j,outline})=>{const contains=(r,col)=>r>=0&&r<plane.cells.length&&col>=0&&col<plane.cols.length&&(c.mask&K.bit(plane.cells[r][col]))!==0n;const styles=[`--g:${groupColor(c,j)}`,`--offset:${2+(colorSlot(c,j)%4)*3}px`],edge=outline[i];
+ // Open wrapped edges at the map boundary, and folded edges toward their partner.
+ if(!edge.top)styles.push(`top:${contains(ri-1,ci)?-4:0}px`,'border-top-color:transparent','border-top-left-radius:0','border-top-right-radius:0');
+ if(!edge.bottom)styles.push(`bottom:${contains(ri+1,ci)?-4:0}px`,'border-bottom-color:transparent','border-bottom-left-radius:0','border-bottom-right-radius:0');
+ if(!edge.left)styles.push(`left:${contains(ri,ci-1)?-4:0}px`,'border-left-color:transparent','border-top-left-radius:0','border-bottom-left-radius:0');
+ if(!edge.right)styles.push(`right:${contains(ri,ci+1)?-4:0}px`,'border-right-color:transparent','border-top-right-radius:0','border-bottom-right-radius:0');
  return `<span class="circle-segment" style="${styles.join(';')}"></span>`;}).join(''):'';
  const labels=gs.map(({j})=>j+1).join('、');return `<td><button type="button" class="${cls}" data-cell="${i}" aria-label="${plane.label?plane.label+'，':''}m${i}，${p.n}位输入 ${K.bits(i,p.n).join('')}，${val===null?'未填':val}${fill&&state.checked?(correct?'，正确':'，错误'):''}${!fill&&labels?'，圈 '+labels:''}" ${ref?'disabled':!fill?`aria-pressed="${selected.has(i)}"`:''}>${edges}<span class="value">${val===null?'·':val}</span><span class="index">${minterm(i)}</span>${fill&&state.checked?`<span class="mark" aria-hidden="true">${correct?'✓':'×'}</span>`:''}${!fill&&gs.length?`<span class="group-badges" aria-hidden="true">${gs.map(({c,j})=>`<i style="--g:${groupColor(c,j)}">${j+1}</i>`).join('')}</span>`:''}</button></td>`;
  }).join('')}</tr>`).join('')}</tbody></table></div>`).join('');

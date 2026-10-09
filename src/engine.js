@@ -72,5 +72,27 @@ function generate(n,mode,difficulty,withX,seed){
 }
 function layout(n){const gray=[0,1,3,2],gray3=[0,1,3,2,6,7,5,4],rows=n===3?[0,1]:gray,cols=n===5?gray3:gray,lowBits=n===3?1:2;return [{label:'',rowLabel:n===3?'C':n===4?'CD':'DE',colLabel:n===5?'ABC':'AB',rows:rows.map(x=>x.toString(2).padStart(lowBits,'0')),cols:cols.map(x=>x.toString(2).padStart(n===5?3:2,'0')),cells:rows.map(rv=>cols.map(cv=>(cv<<lowBits)|rv))}];}
 function groupGeometry(c,n){const map=layout(n)[0],rs=new Set(),cs=new Set();map.cells.forEach((row,r)=>row.forEach((i,col)=>{if(c.mask&bit(i)){rs.add(r);cs.add(col);}}));const consecutive=(set,total)=>set.size===total||[...set].some(start=>Array.from({length:set.size},(_,j)=>(start+j)%total).every(x=>set.has(x)));return {folded:!consecutive(rs,map.rows.length)||!consecutive(cs,map.cols.length)};}
-root.KMap={bit,bits,indices,pop,all,term,expression,masks,legal,solve,checkGroup,assess,evaluateGroups,fixed,generate,layout,groupGeometry,rng};
+// Border visibility belongs to each circle, so overlapping circles stay independent.
+function groupOutline(c,n){
+ const map=layout(n)[0],height=map.rows.length,width=map.cols.length,rs=new Set(),cs=new Set(),out=[];
+ const contains=(r,col)=>Boolean(c.mask&bit(map.cells[r][col]));
+ map.cells.forEach((row,r)=>row.forEach((i,col)=>{if(contains(r,col)){rs.add(r);cs.add(col);}}));
+ const folded=groupGeometry(c,n).folded;
+ // A full-height/width rectangle needs no wrap; only split edge pieces open outward.
+ const wrapRows=rs.size<height&&rs.has(0)&&rs.has(height-1);
+ const wrapCols=!folded&&cs.size<width&&cs.has(0)&&cs.has(width-1);
+ const foldJoin=(r,col,direction)=>map.cols.some((code,k)=>{
+  if((k-col)*direction<=0||!contains(r,k))return false;
+  const difference=parseInt(code,2)^parseInt(map.cols[col],2);
+  return difference>0&&(difference&(difference-1))===0;
+ });
+ map.cells.forEach((row,r)=>row.forEach((i,col)=>{if(!contains(r,col))return;
+  out[i]={top:!(r>0?contains(r-1,col):wrapRows&&contains(height-1,col)),
+   bottom:!(r<height-1?contains(r+1,col):wrapRows&&contains(0,col)),
+   left:!(folded?foldJoin(r,col,-1):col>0?contains(r,col-1):wrapCols&&contains(r,width-1)),
+   right:!(folded?foldJoin(r,col,1):col<width-1?contains(r,col+1):wrapCols&&contains(r,0))};
+ }));
+ return out;
+}
+root.KMap={bit,bits,indices,pop,all,term,expression,masks,legal,solve,checkGroup,assess,evaluateGroups,fixed,generate,layout,groupGeometry,groupOutline,rng};
 })(typeof module!=='undefined'?module.exports:globalThis);

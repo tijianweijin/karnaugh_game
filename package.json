@@ -5,7 +5,8 @@
   "description": "中文三至五变量卡诺图练习小游戏",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node tests/engine.test.js"
+    "test": "node tests/engine.test.js && node tests/outline.test.js",
+    "test:outline": "node tests/outline.test.js"
   },
   "devDependencies": {
     "katex": "0.19.0"
