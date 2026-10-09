@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f6fb">
 <meta name="description" content="离线可用的三至五变量卡诺图练习：填图、环绕圈选、精确最简式检查。">
 <link rel="canonical" href="https://tijianweijin.github.io/karnaugh_game/">
 <meta property="og:type" content="website">
@@ -28,8 +29,8 @@
  <div class="settings-actions"><button class="primary" id="newProblem">生成题目</button><button id="fixedProblem">例题 2.12(3)</button></div>
  </section>
  <nav class="steps" aria-label="练习阶段"><button id="stepFill" class="step active"><b>01</b>填写真值</button><button id="stepGroup" class="step" disabled><b>02</b>交互合圈</button><button id="stepResult" class="step" disabled><b>03</b>检验最简式</button></nav>
- <div class="workspace"><div class="left">
  <section class="problem card"><div class="problem-meta"><h2 id="problemTitle">本题函数</h2><span class="tag" id="problemTag"></span></div><div class="formula" id="source"></div><div class="constraint" id="constraint"></div></section>
+ <div class="workspace"><div class="left">
  <section class="map-card card"><div class="map-heading"><div><h2 id="stageTitle">01 · 填写卡诺图</h2><p class="stage-desc" id="stageDesc"></p></div><span class="tag" id="stageBadge">0 / 16</span></div>
  <div class="toolbar hidden" id="answerView"><button class="paint active" id="viewMine" aria-pressed="true">我的答案</button><button class="paint" id="viewReference" aria-pressed="false">标准答案</button></div>
  <div class="toolbar" id="paintTools"><span class="small">填格方式</span><button class="paint active" data-paint="cycle" aria-pressed="true">点击循环</button><button class="paint" data-paint="0" aria-pressed="false">填 0</button><button class="paint" data-paint="1" aria-pressed="false">填 1</button><button class="paint" data-paint="X" aria-pressed="false">填 X</button><button class="paint" data-paint="empty" aria-pressed="false">橡皮</button></div>
